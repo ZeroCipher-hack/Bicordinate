@@ -1,0 +1,26 @@
+# Maxfiy kalitlar — HECH QACHON commit qilinmaydi
+.env
+.env.*
+!.env.example
+supabase/.env
+supabase/functions/.env
+
+# Supabase CLI
+supabase/.temp/
+supabase/.branches/
+
+# Node / frontend
+node_modules/
+dist/
+.next/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Test fayllari
+*.webm
+*.wav
+*.mp3
