@@ -3,7 +3,7 @@
 // Oqim:
 //   Frontend → Telegram bot link → user approve → callback URL → shu funksiya
 //   Hash tekshiruvi: SHA256(sorted param key=value strings)
-//   User yaratish/topish, Supabase sessiyasi qaytarish.
+//   User yaratish, magic link yaratish, verifyOtp bilan sessiya.
 //
 // Telegram callback'dan: id, first_name, last_name, username, photo_url, auth_date, hash
 //
@@ -11,19 +11,15 @@
 // SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY — Supabase o'zi beradi
 
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
-import { create } from "npm:jose@5.0.0"; // JWT signing
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const JWT_SECRET = Deno.env.get("JWT_SECRET") ?? SERVICE_KEY.slice(0, 32); // JWT signing secret
 const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN") ?? "";
 
-const db = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
+const adminClient = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
+const anonClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false } });
 
-// ---------------------------------------------------------------------------
-// Yordamchilar
-// ---------------------------------------------------------------------------
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 }
@@ -34,60 +30,18 @@ async function sha256(message: string): Promise<string> {
   return Array.from(new Uint8Array(hashBuf)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-// 1 soatdan eski auth'ni rad etish (replay attack oldini olish)
 function isAuthExpired(authDate: number): boolean {
   return Date.now() / 1000 - authDate > 3600;
 }
 
-// ---------------------------------------------------------------------------
-// Telegram hash tekshiruvi
-// ---------------------------------------------------------------------------
+// Telegram hash tekshiruvi: HMAC-SHA256(dataCheckString, SHA256(botToken))
 async function verifyTelegramHash(params: Record<string, string>): Promise<boolean> {
-  // Telegram: hash = SHA256("sorted\ndata\nstring")
-  // Keys: id, first_name, last_name, username, photo_url, auth_date (hash harik emas)
   const dataCheckString = Object.keys(params)
     .filter((k) => k !== "hash")
     .sort()
     .map((k) => `${k}=${params[k]}`)
     .join("\n");
 
-  const botTokenHash = await sha256(TELEGRAM_BOT_TOKEN);
-  const expectedHash = await sha256(dataCheckString.split("").reduce((acc, char, i) => {
-    const botByte = botTokenHash.charCodeAt(Math.floor(i / 2));
-    const charCode = char.charCodeAt(0);
-    return acc + String.fromCharCode(charCode ^ botByte);
-  }, "").split("").reduce((acc, char) => {
-    const charCode = char.charCodeAt(0);
-    return acc + charCode.toString(16).padStart(2, "0");
-  }, ""));
-
-  // Deno/Node.js'da qulayroq: crypto.subtle yordamida HMAC
-  const keyBuf = new TextEncoder().encode(dataCheckString);
-  const keyHash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(TELEGRAM_BOT_TOKEN));
-  const hmac = await crypto.subtle.sign(
-    "HMAC",
-    await crypto.subtle.importKey("raw", keyHash, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]),
-    keyBuf,
-  );
-  const hmacHex = Array.from(new Uint8Array(hmac)).map((b) => b.toString(16).padStart(2, "0")).join("");
-
-  // Telegram o'zining formula'si (HMAC-SHA256)
-  return params.hash === hmacHex;
-}
-
-// Telegramning hash formula'si (oddiy):
-// hash = SHA256(data_check_string), bu yerda:
-// data_check_string = "auth_date=...\nfirst_name=...\nid=...\nlast_name=...\nusername=..."
-// Lekin server tahlili uchun key = bot_token.encode('utf-8')
-
-async function verifyTelegramHashSimple(params: Record<string, string>): Promise<boolean> {
-  const dataCheckString = Object.keys(params)
-    .filter((k) => k !== "hash")
-    .sort()
-    .map((k) => `${k}=${params[k]}`)
-    .join("\n");
-
-  // HMAC-SHA256(data_check_string, SHA256(bot_token))
   const key = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(TELEGRAM_BOT_TOKEN));
   const msg = new TextEncoder().encode(dataCheckString);
   const hmac = await crypto.subtle.sign(
@@ -122,7 +76,6 @@ Deno.serve(async (req) => {
     if (typeof val === "string" || typeof val === "number") params[key] = String(val);
   }
 
-  // Paramlarni tekshirish
   if (!params.id || !params.auth_date || !params.hash) {
     return json({ error: "missing_params" }, 400);
   }
@@ -133,33 +86,30 @@ Deno.serve(async (req) => {
   }
 
   // Hash tekshiruvi
-  const isValid = await verifyTelegramHashSimple(params);
+  const isValid = await verifyTelegramHash(params);
   if (!isValid) {
     console.error("telegram_hash_invalid", params.id);
     return json({ error: "invalid_signature" }, 401);
   }
 
-  const telegramId = BigInt(params.id);
+  const telegramId = params.id;
   const firstName = params.first_name || "User";
   const lastName = params.last_name || "";
   const photoUrl = params.photo_url || null;
   const fullName = `${firstName}${lastName ? " " + lastName : ""}`.trim();
+  const fictiveEmail = `telegram_${telegramId}.invalid`; // .invalid domenini ishlat
 
-  // 2) User topish yoki yaratish
-  const { data: user, error: userErr } = await db
+  // User topish
+  let { data: existingProfile } = await adminClient
     .from("profiles")
     .select("id")
-    .eq("telegram_id", telegramId.toString())
+    .eq("telegram_id", telegramId)
     .maybeSingle();
 
-  let userId = user?.id;
+  let userId = existingProfile?.id;
 
+  // Yangi user yaratish
   if (!userId) {
-    // Yangi user yaratish uchun Supabase auth'ga yozish kerak (service role'ni ishlatamiz)
-    const adminClient = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
-
-    // Email bilan daftarlanish (Telegram'dan email yo'q, fictive email ishlatamiz)
-    const fictiveEmail = `telegram_${telegramId}@bicoordinate.local`;
     const { data: authUser, error: authErr } = await adminClient.auth.admin.createUser({
       email: fictiveEmail,
       email_confirm: true,
@@ -170,51 +120,56 @@ Deno.serve(async (req) => {
     });
 
     if (authErr) {
-      // Email allaqachon bor (odd case)
-      console.error("auth_create_failed", authErr);
+      console.error("telegram_create_user_failed", authErr);
       return json({ error: "user_creation_failed" }, 500);
     }
 
     userId = authUser?.user?.id;
     if (!userId) return json({ error: "user_creation_failed" }, 500);
 
-    // Profile (trigger avtomatik yaratadi, lekin telegram_id'ni qo'shamiz)
-    const { error: profileErr } = await db
+    // Profile'ga telegram_id qo'shish
+    const { error: updateErr } = await adminClient
       .from("profiles")
-      .update({ telegram_id: telegramId.toString() })
+      .update({ telegram_id: telegramId })
       .eq("id", userId);
 
-    if (profileErr) {
-      console.error("profile_update_failed", profileErr);
+    if (updateErr) {
+      console.error("telegram_update_profile_failed", updateErr);
       return json({ error: "profile_update_failed" }, 500);
     }
   }
 
-  // 3) Sessiya yaratish (JWT direct)
-  const sessionToken = await generateSessionToken(userId, telegramId);
+  // Magic link yaratish
+  const { data: linkData, error: linkErr } = await adminClient.auth.admin.generateLink({
+    type: "magiclink",
+    email: fictiveEmail,
+    options: { redirectTo: `${new URL(req.url).origin}/auth/callback` },
+  });
 
+  if (linkErr) {
+    console.error("telegram_magiclink_failed", linkErr);
+    return json({ error: "link_generation_failed" }, 500);
+  }
+
+  // Link'dan OTP'ni shakllash (frontend → verifyOtp)
+  // Link: https://.../#access_token=...&type=magiclink&...
+  // O'rniga: token'ni direct qaytarish (frontend'da fetch bilan)
+  const actionLink = linkData?.properties?.action_link || "";
+  const tokenMatch = actionLink.match(/access_token=([^&]+)/);
+  const token = tokenMatch?.[1] || "";
+
+  if (!token) {
+    console.error("telegram_token_extraction_failed");
+    return json({ error: "token_extraction_failed" }, 500);
+  }
+
+  // Frontend: token'ni localStorage'ga saqlaydi
   return json({
     success: true,
     user_id: userId,
-    telegram_id: params.id,
+    telegram_id: telegramId,
     full_name: fullName,
-    email: fictiveEmail,
-    session_token: sessionToken, // Frontend saqlashi kerak → Authorization header'ga
+    access_token: token, // Frontend → `setSession({ access_token: '...', refresh_token: '...' })`
+    type: "magiclink",
   });
-});
-
-// JWT yaratish (jose bilan)
-async function generateSessionToken(userId: string, telegramId: bigint): Promise<string> {
-  const secret = new TextEncoder().encode(JWT_SECRET);
-  const jwt = await create(
-    { alg: "HS256", typ: "JWT" },
-    {
-      sub: userId,
-      telegram_id: telegramId.toString(),
-      iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60, // 7 kunlik sessiya
-    },
-    secret,
-  );
-  return jwt;
 }
