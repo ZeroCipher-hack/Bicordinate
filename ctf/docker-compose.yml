@@ -1,5 +1,9 @@
 # Faqat 4 ta web masala. Sayt va terminal: app/server.py (README.md).
 # Ishga tushirish:  python3 build.py && docker compose --env-file .flags.env up -d --build
+#
+# "name" ataylab qotirilgan: aks holda Docker loyiha nomini papka nomidan oladi (imtihon, imtihon2, imtihon.3...),
+# va har safar papka qayta ochilganda eski konteynerlar YANGI nom bilan qolib, portlarni band qilib turadi.
+name: bico-ctf
 x-web: &web
   build: ./web
   read_only: true
