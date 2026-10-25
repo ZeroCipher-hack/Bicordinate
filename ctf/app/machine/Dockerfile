@@ -1,4 +1,4 @@
-# SSH "machine" masalasi. Build:  python3 ../../build.py && python3 ../../build.py && docker build -t bico-machine .
+# SSH "machine" masalasi. Build:  python3 ../../build.py && docker build -t bico-machine .
 FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends openssh-server sudo \
     && rm -rf /var/lib/apt/lists/* \
