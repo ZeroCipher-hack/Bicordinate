@@ -1,5 +1,5 @@
-# CTFd (scoreboard + jamoalar) + 4 ta web masala.
-# Ishga tushirish:  python3 build.py && docker compose --env-file .env --env-file .flags.env up -d --build
+# Faqat 4 ta web masala. Sayt va terminal: app/server.py (README.md).
+# Ishga tushirish:  python3 build.py && docker compose --env-file .flags.env up -d --build
 x-web: &web
   build: ./web
   restart: unless-stopped
@@ -9,34 +9,6 @@ x-web: &web
   pids_limit: 64
 
 services:
-  ctfd:
-    image: ctfd/ctfd:3.7.4
-    restart: unless-stopped
-    ports: ["8000:8000"]
-    environment:
-      - UPLOAD_FOLDER=/var/uploads
-      - DATABASE_URL=mysql+pymysql://ctfd:${DB_PASSWORD:?DB_PASSWORD kerak}@db/ctfd
-      - REDIS_URL=redis://cache:6379
-      - SECRET_KEY=${CTFD_SECRET_KEY:?CTFD_SECRET_KEY kerak}
-      - WORKERS=2
-      - REVERSE_PROXY=false
-    volumes: [".data/ctfd:/var/uploads"]
-    depends_on: [db, cache]
-
-  db:
-    image: mariadb:10.11
-    restart: unless-stopped
-    environment:
-      - MARIADB_ROOT_PASSWORD=${DB_ROOT_PASSWORD:?DB_ROOT_PASSWORD kerak}
-      - MARIADB_USER=ctfd
-      - MARIADB_PASSWORD=${DB_PASSWORD:?}
-      - MARIADB_DATABASE=ctfd
-    volumes: [".data/db:/var/lib/mysql"]
-
-  cache:
-    image: redis:7-alpine
-    restart: unless-stopped
-
   web-robots:
     <<: *web
     environment: { CHAL: robots, FLAG: "${FLAG_ROBOTS}", PORT: "8000" }

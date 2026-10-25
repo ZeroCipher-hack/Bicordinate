@@ -2,3 +2,8 @@
 .flags.env
 .data/
 challenges/
+app/challenges.json
+app/files/
+app/shell/masalalar/
+app/data/
+__pycache__/

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BICO CTF — Kirish</title>
+<link rel="stylesheet" href="/assets/app.css">
+</head>
+<body>
+<div class="top"><div class="logo">BICO<b>/</b>CTF</div></div>
+<main class="login">
+  <section class="hero">
+    <div class="eyebrow">Yakka musobaqa</div>
+    <h2>Terminalda yech.<br>Birinchi bo'l.</h2>
+    <p>Linux, Crypto, Web va Forensics masalalari. Brauzerdagi terminalni oching, flagni toping va yuboring.</p>
+    <div class="stats" id="stats"></div>
+    <div class="mini" aria-hidden="true">
+      <div><span class="g">talaba@bico</span>:~$ ls -la</div>
+      <div class="muted">-rw-r--r--  1 talaba talaba  34 .yashirin</div>
+      <div><span class="g">talaba@bico</span>:~$ cat .yashirin</div>
+      <div class="a">BICO{???}</div>
+    </div>
+  </section>
+  <form class="panel card-login" id="f" autocomplete="off">
+    <div><h3>Kirish / ro'yxatdan o'tish</h3><div class="muted" style="font-size:14px;margin-top:4px">Parol shart emas: ism va 4 raqamli PIN.</div></div>
+    <div class="field"><label for="name">Ism</label>
+      <input class="input" id="name" maxlength="20" placeholder="masalan: Dilnoza" required>
+      <small>Reytingda shu ism ko'rinadi. Yangi ism bo'lsa — ro'yxatdan o'tasiz.</small></div>
+    <div class="field"><label for="pin">PIN (4 raqam)</label>
+      <input class="input mono" id="pin" type="password" inputmode="numeric" maxlength="4" pattern="\d{4}" placeholder="••••" required>
+      <small>Qayta kirish uchun kerak. Unutmang — boshqa ism bilan o'ynab bo'lmaydi.</small></div>
+    <div class="err" id="err" role="alert"></div>
+    <button class="btn primary" style="height:48px;font-size:16px" type="submit">Boshlash</button>
+  </form>
+</main>
+<script src="/assets/app.js"></script>
+<script src="/assets/index.js"></script>
+</body>
+</html>

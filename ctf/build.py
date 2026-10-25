@@ -608,3 +608,26 @@ for cat, slug, name, value, desc, files, port, hints in CHALLENGES:
 (ROOT / ".flags.env").write_text("".join(f"FLAG_{k.upper()}={v}\n" for k, v in FLAGS.items()))
 total = sum(c[3] for c in CHALLENGES)
 print(f"{len(CHALLENGES)} ta masala, jami {total} ball -> {OUT}")
+
+# ---------------------------------------------------------------- sayt (app/) uchun eksport
+import hashlib
+import shutil
+
+APP = ROOT / "app"
+for sub in ("files", "shell/masalalar"):
+    shutil.rmtree(APP / sub, ignore_errors=True)
+CAT_ORDER = {"misc": 0, "linux": 1, "crypto": 2, "forensics": 3, "web": 4}
+export = []
+for cat, slug, name, value, desc, files, port, hints in sorted(CHALLENGES, key=lambda c: (CAT_ORDER[c[0]], c[3], c[2])):
+    for sub in (APP / "files" / slug, APP / "shell/masalalar" / slug):
+        sub.mkdir(parents=True, exist_ok=True)
+        for fn in files:
+            shutil.copy(OUT / cat / slug / fn, sub / fn)
+    export.append({
+        "id": slug, "category": cat, "name": name, "points": value, "description": desc,
+        "hints": [{"text": h, "cost": 10} for h in hints], "files": files, "web_port": port,
+        # flag hech qachon ochiq saqlanmaydi — faqat xesh
+        "flag_sha256": hashlib.sha256(FLAGS[slug].encode()).hexdigest(),
+    })
+(APP / "challenges.json").write_text(json.dumps(export, ensure_ascii=False, indent=1))
+print(f"app/challenges.json: {len(export)} ta masala")

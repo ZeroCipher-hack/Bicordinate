@@ -1,0 +1,11 @@
+# O'quvchi shelli sozlamalari (konteyner ichida /etc/bico.bashrc)
+export PATH="$PATH:/usr/sbin:/sbin"
+export HISTFILE="$HOME/.bash_history"
+SRC="${BICO_SRC:-/opt/masalalar}"
+[ -d "$HOME/masalalar" ] || cp -r "$SRC" "$HOME/masalalar"
+cd "$HOME"
+PS1='\[\e[32m\]talaba@bico\[\e[0m\]:\[\e[36m\]\w\[\e[0m\]\$ '
+alias ll='ls -la'
+echo "BICO CTF terminali. Masalalar fayllari: ~/masalalar/<masala_id>/"
+echo "Masala matni va flag yuborish — 'Savollar' sahifasida."
+echo

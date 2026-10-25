@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BICO CTF — Terminal</title>
+<link rel="stylesheet" href="/assets/vendor/xterm.css">
+<link rel="stylesheet" href="/assets/app.css">
+</head>
+<body>
+<header class="top" id="top"></header>
+<main class="term-page">
+  <section class="term-box" aria-label="Terminal">
+    <div class="term-bar">
+      <div class="dots" aria-hidden="true"><i></i><i></i><i></i></div>
+      <div class="ttl">talaba@bico: ~</div>
+      <button class="linkbtn" id="reconnect" hidden>Qayta ulanish</button>
+      <div class="st" id="st"><i></i><span>ulanmoqda…</span></div>
+    </div>
+    <div id="term"></div>
+  </section>
+  <aside class="side">
+    <div class="panel">
+      <label for="pick" class="muted" style="font-size:13px">Masala</label>
+      <select id="pick"></select>
+      <div id="task"></div>
+    </div>
+    <div class="panel">
+      <strong style="font-size:14px">Maslahatlar</strong>
+      <div class="keys">
+        <div><b>Tab</b> — buyruqni to'ldirish</div>
+        <div><b>↑</b> — oldingi buyruq</div>
+        <div><b>Ctrl+C</b> — to'xtatish</div>
+        <div><b>Ctrl+Shift+C / V</b> — nusxa / qo'yish</div>
+        <div><b>man buyruq</b> — yordam, <b>q</b> — chiqish</div>
+      </div>
+    </div>
+  </aside>
+</main>
+<script src="/assets/vendor/xterm.js"></script>
+<script src="/assets/vendor/addon-fit.js"></script>
+<script src="/assets/app.js"></script>
+<script src="/assets/terminal.js"></script>
+</body>
+</html>
