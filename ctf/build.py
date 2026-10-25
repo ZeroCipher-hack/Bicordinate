@@ -185,10 +185,14 @@ def make_tar(slug, entries):
     d = OUT / "linux" / slug
     d.mkdir(parents=True, exist_ok=True)
     with tarfile.open(d / "uy.tar.gz", "w:gz") as tf:
-        for path, data, mode in entries:
+        for path, data, mode, *mt in entries:
             ti = tarfile.TarInfo(path)
-            ti.mode, ti.uid, ti.gid, ti.uname, ti.gname, ti.mtime = mode, 1000, 1000, "kali", "kali", 1761000000
-            if data is None:
+            ti.mode, ti.uid, ti.gid, ti.uname, ti.gname = mode, 1000, 1000, "kali", "kali"
+            ti.mtime = mt[0] if mt else 1761000000
+            if isinstance(data, tuple):
+                ti.type, ti.linkname = tarfile.SYMTYPE, data[1]
+                tf.addfile(ti)
+            elif data is None:
                 ti.type = tarfile.DIRTYPE
                 tf.addfile(ti)
             else:
@@ -308,6 +312,283 @@ add("linux", "l_shadow", "Parol buzish", 200,
     "Bu `/etc/passwd` va `/etc/shadow` nusxalari. `ctfuser` paroli rockyou ro'yxatida. **Flag: `BICO{` + parol + `}`.**" + TAR_NOTE,
     files=["uy.tar.gz"],
     hints=["`unshadow passwd.txt shadow.txt > hash.txt`", "`john --format=crypt --wordlist=/usr/share/wordlists/rockyou.txt hash.txt`"])
+
+# ---------------------------------------------------------------- qo'shimcha masalalar (jami 50)
+FLAGS.update({
+    "l_catn": "BICO{cat_n_qator_raqami}",
+    "l_grepi": "BICO{grep_i_harf_farqsiz}",
+    "l_grepe": "BICO{grep_e_ikki_soz}",
+    "l_tail50": "BICO{tail_n_50_oxirgi_qatorlar}",
+    "l_spaces": "BICO{bosh_joyli_fayl_nomi}",
+    "l_stdout": "BICO{stderr_ni_dev_null_ga}",
+    "l_stderr": "BICO{stdout_ni_yashirdim}",
+    "l_exec": "BICO{chmod_plus_x}",
+    "l_group": "BICO{tungi_smena}",
+    "l_passwd": "BICO{ilhom_admin}",
+    "l_osrel": "BICO{quyosh}",
+    "l_symlink": "BICO{ln_s_havola_ishora}",
+    "l_newest": "BICO{ls_t_eng_yangi_fayl}",
+    "l_history": "BICO{history_hammasini_eslaydi}",
+    "l_zshrc": "BICO{zshrc_ichidagi_alias}",
+    "l_wildpdf": "BICO{a_yulduz_nuqta_pdf}",
+    "l_wilddigit": "BICO{raqamli_nomli_fayl}",
+    "l_finddir": "BICO{find_type_d_papka}",
+    "l_combo": "BICO{find_uch_shart_birga}",
+    "l_hiddendir": "BICO{yashirin_papka_ichida}",
+    "c_hex": "BICO{hex_oddiy_kodlash}",
+    "c_bin": "BICO{ikkilik_sanoq_tizimi}",
+    "c_b32": "BICO{base32_ham_bor}",
+    "c_rot47": "BICO{rot47_belgilarni_suradi}",
+    "c_atbash": "BICO{atbash_ogirma_alifbo}",
+    "c_morse": "BICO{morze_yozuvi}",
+    "c_vig": "BICO{vijener_kalit_bilan}",
+    "f_zip": "BICO{zip_ichida_zip_ichida_zip}",
+})
+
+# 1. cat -n
+L = lorem(500)
+L[236] = FLAGS["l_catn"]
+make_tar("l_catn", [("uy", None, 0o755), ("uy/royxat.txt", b("\n".join(L) + "\n"), 0o644)])
+add("linux", "l_catn", "237-qator", 25, "`royxat.txt` da 500 qator bor. Flag aynan **237-qatorda**." + TAR_NOTE,
+    files=["uy.tar.gz"], hints=["`cat -n royxat.txt`"])
+
+# 2. grep -i
+L = lorem(120)
+for i in range(0, 120, 7):
+    L[i] = rng.choice(["secret: yo'q", "SECRET: yo'q", "Secret: hech narsa", "sECRET: bo'sh"])
+L[83] = "sEcReT: " + FLAGS["l_grepi"]
+make_tar("l_grepi", [("uy", None, 0o755), ("uy/eslatmalar.txt", b("\n".join(L) + "\n"), 0o644)])
+add("linux", "l_grepi", "Katta-kichik harf", 50,
+    "`secret` so'zi faylda har xil yozilgan (Secret, SECRET, sEcReT...). Flag bor qatorni toping." + TAR_NOTE,
+    files=["uy.tar.gz"], hints=["`grep -i secret eslatmalar.txt`"])
+
+# 3. grep -e
+L = lorem(400)
+L[50], L[310] = "kalit=" + FLAGS["l_grepe"][:-9], "parol=" + FLAGS["l_grepe"][-9:]
+for i in (20, 120, 220, 330):
+    L[i] = rng.choice(["kalit=eskirgan", "parol=eskirgan"])
+make_tar("l_grepe", [("uy", None, 0o755), ("uy/sozlama.conf", b("\n".join(L) + "\n"), 0o644)])
+add("linux", "l_grepe", "Ikki so'z", 50,
+    "Flag ikkiga bo'lingan: `kalit=` qatorida boshi, `parol=` qatorida oxiri. `eskirgan` yozuvlari — yolg'on." + TAR_NOTE,
+    files=["uy.tar.gz"], hints=["`grep -e kalit -e parol sozlama.conf`"])
+
+# 4. tail -n 50
+L = lorem(200)
+L[165] = FLAGS["l_tail50"]
+make_tar("l_tail50", [("uy", None, 0o755), ("uy/server.log", b("\n".join(L) + "\n"), 0o644)])
+add("linux", "l_tail50", "Oxirgi 50", 25, "Flag `server.log` ning **oxirgi 50 qatori** ichida." + TAR_NOTE,
+    files=["uy.tar.gz"], hints=["`tail -n 50 server.log`"])
+
+# 5. bo'sh joyli fayl nomi
+ents = [("uy", None, 0o755)] + [(f"uy/hujjat{i}.txt", b"hech narsa\n", 0o644) for i in range(5)]
+ents.append(("uy/bu mening faylim.txt", b(FLAGS["l_spaces"] + "\n"), 0o644))
+make_tar("l_spaces", ents)
+add("linux", "l_spaces", "Bo'sh joy", 25, "`bu mening faylim.txt` ni o'qing. Nomida bo'sh joy bor — `cat bu mening faylim.txt` ishlamaydi." + TAR_NOTE,
+    files=["uy.tar.gz"], hints=["Qo'shtirnoq: `cat \"bu mening faylim.txt\"` yoki Tab."])
+
+# 6-7. STDOUT / STDERR
+noise = "".join(f'echo "OGOHLANTIRISH: modul {i} topilmadi" >&2\n' for i in range(150))
+make_tar("l_stdout", [("uy", None, 0o755), ("uy/skan.sh", b("#!/bin/bash\n" + noise + f'echo "{FLAGS["l_stdout"]}"\n' + noise), 0o755)])
+add("linux", "l_stdout", "Shovqin", 75,
+    "`./skan.sh` ni ishga tushiring. Ekran xato xabarlariga to'ladi, flag shular orasida yo'qoladi. Xatolarni (STDERR) yo'q qiling." + TAR_NOTE,
+    files=["uy.tar.gz"], hints=["`./skan.sh 2>/dev/null`"])
+noise = "".join(f'echo "ish davom etmoqda: {i}%"\n' for i in range(150))
+make_tar("l_stderr", [("uy", None, 0o755), ("uy/skan2.sh", b("#!/bin/bash\n" + noise + f'echo "{FLAGS["l_stderr"]}" >&2\n'), 0o755)])
+add("linux", "l_stderr", "Teskari shovqin", 75,
+    "`./skan2.sh` ekranga 150 qator yozadi, flag esa boshqa oqimda. Odatiy natijani (STDOUT) o'chirib, faqat flagni ko'ring." + TAR_NOTE,
+    files=["uy.tar.gz"], hints=["`./skan2.sh 1>/dev/null`", "yoki `./skan2.sh 2>xato.txt` va `cat xato.txt`"])
+
+# 8. chmod +x
+make_tar("l_exec", [("uy", None, 0o755), ("uy/bayroq", b("#!/bin/bash\necho " + FLAGS["l_exec"] + "\n"), 0o644)])
+add("linux", "l_exec", "Ishga tushmaydi", 50,
+    "`./bayroq` — `Permission denied`. Bu dastur, lekin unga ishga tushirish huquqi berilmagan." + TAR_NOTE,
+    files=["uy.tar.gz"], hints=["`ls -l bayroq` — `x` yo'q. `chmod +x bayroq`."])
+
+# 9. /etc/group
+names = ["adm", "dialout", "cdrom", "sudo", "audio", "video", "plugdev", "users", "kutubxona", "oshxona", "sport",
+         "nosir", "bico_a", "bico_b", "labora", "tungi_smena", "ertalab", "ombor", "wifi", "printer"]
+L = [f"root:x:0:"] + [f"{n}:x:{1000+i}:" + ",".join(rng.sample(["ali", "vali", "sardor", "dilnoza", "jasur"], rng.randrange(0, 3)))
+                       for i, n in enumerate(names)]
+L = [l for l in L if "talaba" not in l]
+L = [l + ",talaba" if l.startswith("tungi_smena:") and l.endswith(",") is False and l.split(":")[3] else
+     (l + "talaba" if l.startswith("tungi_smena:") else l) for l in L]
+assert sum("talaba" in l for l in L) == 1
+make_tar("l_group", [("uy", None, 0o755), ("uy/group.txt", b("\n".join(L) + "\n"), 0o644)])
+add("linux", "l_group", "Qaysi guruh?", 75,
+    "`group.txt` — `/etc/group` nusxasi. Foydalanuvchi `talaba` faqat bitta guruhning a'zosi. **Flag: `BICO{` + guruh nomi + `}`.**" + TAR_NOTE,
+    files=["uy.tar.gz"], hints=["`grep talaba group.txt` — qator boshidagi nom guruh nomi."])
+
+# 10. /etc/passwd
+L = ["root:x:0:0:root:/root:/bin/bash"] + [f"{n}:x:{i+1}:{i+1}::/var/{n}:/usr/sbin/nologin" for i, n in enumerate(
+    ["daemon", "bin", "sys", "games", "man", "lp", "mail", "news", "uucp", "proxy", "www-data", "backup", "list"])]
+L += [f"{n}:x:{1000+i}:{1000+i}::/home/{n}:/usr/sbin/nologin" for i, n in enumerate(["ali", "vali", "sardor", "jasur"])]
+L.insert(9, "ilhom_admin:x:1010:1010::/home/ilhom_admin:/bin/bash")
+make_tar("l_passwd", [("uy", None, 0o755), ("uy/passwd.txt", b("\n".join(L) + "\n"), 0o644)])
+add("linux", "l_passwd", "Kim kira oladi?", 75,
+    "`passwd.txt` — `/etc/passwd` nusxasi. Tizimga kira oladigan (shelli `/bin/bash`) **oddiy** foydalanuvchi (UID >= 1000) bitta. "
+    "**Flag: `BICO{` + username + `}`.**" + TAR_NOTE, files=["uy.tar.gz"],
+    hints=["Maydonlar `:` bilan ajralgan: 3-chisi UID, 7-chisi shell. `grep bash passwd.txt`"])
+
+# 11. os-release
+make_tar("l_osrel", [("uy", None, 0o755), ("uy/os-release", b(
+    'PRETTY_NAME="CTF Linux 7"\nNAME="CTF Linux"\nVERSION_ID="7"\nVERSION="7 (Quyosh)"\n'
+    'VERSION_CODENAME=quyosh\nID=ctflinux\nID_LIKE=debian\nHOME_URL="https://example.org/"\n'), 0o644)])
+add("linux", "l_osrel", "Qaysi distro?", 25,
+    "`os-release` — `cat /etc/os-release` ning nusxasi. **Flag: `BICO{` + `VERSION_CODENAME` qiymati + `}`.**" + TAR_NOTE,
+    files=["uy.tar.gz"], hints=["`cat os-release`"])
+
+# 12. symlink
+make_tar("l_symlink", [("uy", None, 0o755), ("uy/chuqur", None, 0o755), ("uy/chuqur/yashirin", None, 0o755),
+    (f"uy/chuqur/yashirin/{FLAGS['l_symlink']}", b"bu fayl bo'sh emas, lekin flag uning nomida\n", 0o644),
+    ("uy/kirish", ("link", f"chuqur/yashirin/{FLAGS['l_symlink']}"), 0o777)])
+add("linux", "l_symlink", "Havola", 75,
+    "`kirish` oddiy fayl emas — simvolik havola. U **qayerga ishora qiladi**? Flag — nishon fayl nomining o'zi." + TAR_NOTE,
+    files=["uy.tar.gz"], hints=["`ls -l kirish`", "`readlink kirish`"])
+
+# 13. ls -t
+ents = [("uy", None, 0o755)]
+order = list("abcdefghijkl")
+rng.shuffle(order)
+for i, nm in enumerate(order):
+    body = FLAGS["l_newest"] if i == 11 else "eski ma'lumot"
+    ents.append((f"uy/{nm}.txt", b(body + "\n"), 0o644, 1761000000 + i * 3600))
+make_tar("l_newest", ents)
+add("linux", "l_newest", "Eng yangi", 50,
+    "12 ta fayl. Flag **eng oxirgi o'zgartirilgan** faylda." + TAR_NOTE, files=["uy.tar.gz"], hints=["`ls -lt` — yangisi tepada."])
+
+# 14. history
+H = ["ls", "cd Downloads", "pwd", "cat eslatma.txt", "sudo apt update", "ls -la", "cd ..", "nano maqsad.txt", "clear", "mkdir test", "rm -rf test", "uname -r"]
+H = [rng.choice(H) for _ in range(80)]
+H.insert(46, "export KALIT=" + FLAGS["l_history"])
+make_tar("l_history", [("uy", None, 0o755), ("uy/.bash_history", b("\n".join(H) + "\n"), 0o600)])
+add("linux", "l_history", "Eski buyruqlar", 50,
+    "Bu foydalanuvchining buyruqlar tarixi (`.bash_history`). U qachondir flagni terminalga yozib yuborgan." + TAR_NOTE,
+    files=["uy.tar.gz"], hints=["Yashirin fayl: `ls -la`. `grep BICO .bash_history`"])
+
+# 15. .zshrc
+make_tar("l_zshrc", [("uy", None, 0o755), ("uy/.zshrc", b(
+    "# oddiy sozlamalar\nalias c=clear\nalias yangilash=\"sudo apt update && sudo apt upgrade\"\nalias ll='ls -la'\n"
+    f"alias nimadir='echo {FLAGS['l_zshrc']}'\nexport EDITOR=nano\n"), 0o644)])
+add("linux", "l_zshrc", "G'alati alias", 25, "`.zshrc` ichidagi aliaslardan biri boshqalarga o'xshamaydi." + TAR_NOTE,
+    files=["uy.tar.gz"], hints=["`cat .zshrc`"])
+
+# 16. a*.pdf
+ents = [("uy", None, 0o755)]
+for nm in ["a_reja.txt", "a_hisob.txt", "b_kitob.pdf", "d_lug'at.pdf", "kitob.pdf", "rasm.png", "x_eslatma.txt"]:
+    ents.append((f"uy/{nm}", b"bu emas\n", 0o644))
+ents.append(("uy/a_konspekt.pdf", b(FLAGS["l_wildpdf"] + "\n"), 0o644))
+make_tar("l_wildpdf", ents)
+add("linux", "l_wildpdf", "A harfi va PDF", 50,
+    "Flag **`a` harfi bilan boshlanadigan `.pdf`** faylda. Nomini yozmasdan, wildcard bilan oching." + TAR_NOTE,
+    files=["uy.tar.gz"], hints=["`ls a*.pdf`, `cat a*.pdf`"])
+
+# 17. *[0-9]*
+ents = [("uy", None, 0o755)]
+words = ["olma", "anor", "uzum", "behi", "nok", "shaftoli", "gilos", "qovun", "tarvuz", "limon"]
+for i, w in enumerate(words * 6):
+    ents.append((f"uy/{w}_{chr(97+i//10)}{chr(97+i%10)}.txt", b"bu emas\n", 0o644))
+ents.append(("uy/fayl7.txt", b(FLAGS["l_wilddigit"] + "\n"), 0o644))
+make_tar("l_wilddigit", ents)
+add("linux", "l_wilddigit", "Raqamli nom", 50, "60 ta fayl. Bittasining nomida **raqam** bor. Flag shunda." + TAR_NOTE,
+    files=["uy.tar.gz"], hints=["`ls *[0-9]*`"])
+
+# 18. find -type d
+ents = [("uy", None, 0o755), ("uy/a", None, 0o755), ("uy/a/b", None, 0o755),
+        ("uy/a/BICO{bu_flag_emas}", b"bu fayl, papka emas\n", 0o644),
+        (f"uy/a/b/{FLAGS['l_finddir']}", None, 0o755)]
+make_tar("l_finddir", ents)
+add("linux", "l_finddir", "Fayl emas, papka", 75,
+    "Ichma-ich papkalarda `BICO` bilan boshlanadigan ikki narsa bor: bittasi fayl (yolg'on), bittasi **papka**. Flag — papka nomi." + TAR_NOTE,
+    files=["uy.tar.gz"], hints=["`find . -type d -name \"BICO*\"`"])
+
+# 19. find kombinatsiya
+ents = [("uy", None, 0o755), ("uy/Hisobot_2024.txt", b"kichik\n", 0o644), ("uy/hisobot_dir", None, 0o755),
+        ("uy/kitob.txt", b"x" * 9000, 0o644), ("uy/hisobot_eski.txt", b"juda kichik\n", 0o644),
+        ("uy/hisobot_yillik.txt", b(FLAGS["l_combo"] + "\n") + b"." * 9000, 0o644)]
+make_tar("l_combo", ents)
+add("linux", "l_combo", "Uch shart", 100,
+    "Kerakli fayl: nomi `hisobot` bilan boshlanadi (katta-kichik harf farqsiz), u **fayl** (papka emas) va **5 KB dan katta**." + TAR_NOTE,
+    files=["uy.tar.gz"], hints=["`find . -iname \"hisobot*\" -type f -size +5k`"])
+
+# 20. yashirin papka
+make_tar("l_hiddendir", [("uy", None, 0o755), ("uy/Documents", None, 0o755), ("uy/.yashirin_papka", None, 0o755),
+    ("uy/.yashirin_papka/.ichki", None, 0o755), ("uy/.yashirin_papka/.ichki/sir.txt", b(FLAGS["l_hiddendir"] + "\n"), 0o644)])
+add("linux", "l_hiddendir", "Yashirin ichida yashirin", 50,
+    "Yashirin papka ichida yana yashirin papka. Nuqta bilan boshlanadigan nomlar `ls` da ko'rinmaydi." + TAR_NOTE,
+    files=["uy.tar.gz"], hints=["`ls -la`, keyin `cd`"])
+
+# ------ Crypto (oson)
+def body_of(k):
+    return FLAGS[k][5:-1]
+
+write("crypto", "c_hex", "xabar.txt", FLAGS["c_hex"].encode().hex() + "\n")
+add("crypto", "c_hex", "Hex", 25, "Matn o'n oltilik (hex) ko'rinishda yozilgan.", files=["xabar.txt"], hints=["`xxd -r -p xabar.txt`"])
+
+write("crypto", "c_bin", "xabar.txt", " ".join(f"{b_:08b}" for b_ in FLAGS["c_bin"].encode()) + "\n")
+add("crypto", "c_bin", "Nol va bir", 50, "Har bir belgi 8 ta nol/bir bilan yozilgan.", files=["xabar.txt"],
+    hints=["Har 8 bit — bitta ASCII belgi (`A` = 01000001)."])
+
+write("crypto", "c_b32", "xabar.txt", base64.b32encode(FLAGS["c_b32"].encode()).decode() + "\n")
+add("crypto", "c_b32", "Base... nechta?", 50, "Base64 emas. Faqat katta harflar va `2-7` raqamlari ishlatilgan.", files=["xabar.txt"],
+    hints=["`base32 -d xabar.txt`"])
+
+
+def rot47(s):
+    return "".join(chr(33 + (ord(c) - 33 + 47) % 94) if 33 <= ord(c) <= 126 else c for c in s)
+
+
+write("crypto", "c_rot47", "xabar.txt", rot47(FLAGS["c_rot47"]) + "\n")
+add("crypto", "c_rot47", "Rot... 47", 50, "ROT13 harflarni suradi. Bu esa **barcha** ko'rinadigan belgilarni suradi (ASCII 33-126). Qavslar ham o'zgargan.",
+    files=["xabar.txt"], hints=["`tr '!-~' 'P-~!-O' < xabar.txt`"])
+
+
+def atbash(s):
+    return "".join(chr(219 - ord(c)) if c.islower() else chr(155 - ord(c)) if c.isupper() else c for c in s)
+
+
+write("crypto", "c_atbash", "xabar.txt", "BICO{" + atbash(body_of("c_atbash")) + "}\n")
+add("crypto", "c_atbash", "Teskari alifbo", 50,
+    "a↔z, b↔y, c↔x... Faqat `{}` ichidagi harflar almashtirilgan (`BICO` va `_` joyida).", files=["xabar.txt"],
+    hints=["`tr 'a-z' 'z-a'`"])
+
+MORSE = {"a": ".-", "b": "-...", "c": "-.-.", "d": "-..", "e": ".", "f": "..-.", "g": "--.", "h": "....", "i": "..", "j": ".---",
+         "k": "-.-", "l": ".-..", "m": "--", "n": "-.", "o": "---", "p": ".--.", "q": "--.-", "r": ".-.", "s": "...", "t": "-",
+         "u": "..-", "v": "...-", "w": ".--", "x": "-..-", "y": "-.--", "z": "--..", "_": "/"}
+write("crypto", "c_morse", "xabar.txt", " ".join(MORSE[c] for c in body_of("c_morse")) + "\n")
+add("crypto", "c_morse", "Nuqta va tire", 50,
+    "Morze kodi. `/` — `_` belgisi. Natijani **kichik harflarda** `BICO{...}` ichiga joylang.", files=["xabar.txt"])
+
+
+def vig(s, key, sign=1):
+    out, j = [], 0
+    for c in s:
+        if c.isalpha():
+            out.append(chr((ord(c) - 97 + sign * (ord(key[j % len(key)]) - 97)) % 26 + 97))
+            j += 1
+        else:
+            out.append(c)
+    return "".join(out)
+
+
+write("crypto", "c_vig", "xabar.txt", "BICO{" + vig(body_of("c_vig"), "kali") + "}\n")
+add("crypto", "c_vig", "Vijener", 100,
+    "Vijener shifri. Kalit: `kali`. Faqat `{}` ichidagi harflar shifrlangan, `_` o'tkazib yuborilgan (kalit harfi sarflanmaydi).",
+    files=["xabar.txt"], hints=["CyberChef → Vigenère Decode, yoki har harfni kalit harfi bo'yicha qo'lda orqaga suring."])
+
+# ------ Forensics
+import zipfile
+
+inner = io.BytesIO()
+with zipfile.ZipFile(inner, "w") as z:
+    z.writestr("flag.txt", FLAGS["f_zip"] + "\n")
+for lvl in ("c", "b"):
+    outer = io.BytesIO()
+    with zipfile.ZipFile(outer, "w") as z:
+        z.writestr(f"{lvl}.zip", inner.getvalue())
+    inner = outer
+write("forensics", "f_zip", "a.zip", inner.getvalue())
+add("forensics", "f_zip", "Matryoshka", 50, "Arxiv ichida arxiv ichida arxiv. Pastgacha oching.", files=["a.zip"],
+    hints=["`unzip a.zip` ni takrorlang yoki `file` bilan har bir faylni tekshiring."])
 
 # ---------------------------------------------------------------- chiqarish
 for cat, slug, name, value, desc, files, port, hints in CHALLENGES:

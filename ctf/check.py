@@ -108,5 +108,58 @@ salt = h.split("$")[2]
 pw = subprocess.run(["openssl", "passwd", "-6", "-salt", salt, "iloveyou"], capture_output=True, text=True).stdout.strip()
 check("l_shadow", "BICO{iloveyou}" if pw == h else "hash mos kelmadi")
 
+# --- yangi Linux masalalar
+check("l_catn", sh("l_catn", "cat -n royxat.txt | grep -P '^\\s+237\\t' | cut -f2").strip())
+check("l_grepi", flag_in(sh("l_grepi", "grep -i secret eslatmalar.txt")))
+parts = sh("l_grepe", "grep -e kalit -e parol sozlama.conf | grep -v eskirgan").splitlines()
+check("l_grepe", parts[0].split("=", 1)[1] + parts[1].split("=", 1)[1])
+check("l_tail50", flag_in(sh("l_tail50", "tail -n 50 server.log")))
+check("l_spaces", flag_in(sh("l_spaces", 'cat "bu mening faylim.txt"')))
+check("l_stdout", flag_in(sh("l_stdout", "./skan.sh 2>/dev/null")))
+check("l_stderr", flag_in(sh("l_stderr", "./skan2.sh 2>&1 1>/dev/null")))
+check("l_exec", flag_in(sh("l_exec", "chmod +x bayroq; ./bayroq")))
+check("l_group", "BICO{" + sh("l_group", "grep talaba group.txt | cut -d: -f1").strip() + "}")
+check("l_passwd", "BICO{" + sh("l_passwd", "awk -F: '$3>=1000 && $7==\"/bin/bash\"{print $1}' passwd.txt").strip() + "}")
+check("l_osrel", "BICO{" + sh("l_osrel", "grep VERSION_CODENAME os-release | cut -d= -f2").strip() + "}")
+check("l_symlink", flag_in(sh("l_symlink", "readlink kirish")))
+check("l_newest", flag_in(sh("l_newest", "cat $(ls -t | head -1)")))
+check("l_history", flag_in(sh("l_history", "grep BICO .bash_history")))
+check("l_zshrc", flag_in(sh("l_zshrc", "cat .zshrc")))
+check("l_wildpdf", flag_in(sh("l_wildpdf", "cat a*.pdf")))
+check("l_wilddigit", flag_in(sh("l_wilddigit", "cat *[0-9]*")))
+check("l_finddir", flag_in(sh("l_finddir", 'find . -type d -name "BICO*"')))
+check("l_combo", flag_in(sh("l_combo", 'cat "$(find . -iname "hisobot*" -type f -size +5k)"')))
+check("l_hiddendir", flag_in(sh("l_hiddendir", "cat .yashirin_papka/.ichki/sir.txt")))
+
+# --- yangi Crypto / Forensics
+rd = lambda p: (C / p).read_text().strip()
+check("c_hex", bytes.fromhex(rd("crypto/c_hex/xabar.txt")).decode())
+check("c_bin", "".join(chr(int(b_, 2)) for b_ in rd("crypto/c_bin/xabar.txt").split()))
+check("c_b32", base64.b32decode(rd("crypto/c_b32/xabar.txt")).decode())
+check("c_rot47", "".join(chr(33 + (ord(c) - 33 + 47) % 94) if 33 <= ord(c) <= 126 else c for c in rd("crypto/c_rot47/xabar.txt")))
+check("c_atbash", "BICO{" + "".join(chr(219 - ord(c)) if c.islower() else c for c in rd("crypto/c_atbash/xabar.txt")[5:-1]) + "}")
+M = {v: k for k, v in {"a": ".-", "b": "-...", "c": "-.-.", "d": "-..", "e": ".", "f": "..-.", "g": "--.", "h": "....", "i": "..",
+     "j": ".---", "k": "-.-", "l": ".-..", "m": "--", "n": "-.", "o": "---", "p": ".--.", "q": "--.-", "r": ".-.", "s": "...",
+     "t": "-", "u": "..-", "v": "...-", "w": ".--", "x": "-..-", "y": "-.--", "z": "--..", "_": "/"}.items()}
+check("c_morse", "BICO{" + "".join(M[t] for t in rd("crypto/c_morse/xabar.txt").split()) + "}")
+v, j, out = rd("crypto/c_vig/xabar.txt")[5:-1], 0, []
+for ch in v:
+    if ch.isalpha():
+        out.append(chr((ord(ch) - 97 - (ord("kali"[j % 4]) - 97)) % 26 + 97)); j += 1
+    else:
+        out.append(ch)
+check("c_vig", "BICO{" + "".join(out) + "}")
+import zipfile
+import io as _io
+data = (C / "forensics/f_zip/a.zip").read_bytes()
+while True:
+    z = zipfile.ZipFile(_io.BytesIO(data))
+    nm = z.namelist()[0]
+    data = z.read(nm)
+    if nm.endswith(".txt"):
+        break
+check("f_zip", data.decode().strip())
+
+
 check("welcome", FLAGS["FLAG_WELCOME"])
 raise SystemExit(0 if ok else 1)
