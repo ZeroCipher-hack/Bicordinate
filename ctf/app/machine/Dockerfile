@@ -5,7 +5,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends openssh-server 
     && mkdir -p /run/sshd \
     && ssh-keygen -A \
     # operator: parol xeshi setup.env dan ENTRYPOINT'da o'rnatiladi; sudo YO'Q, boshqa foydalanuvchi faylini ko'ra olmaydi
-    && useradd -m -s /bin/bash operator \
+    # Debian bazasida "operator" nomli tizim guruhi allaqachon bor (base-passwd) — shuni qayta ishlatamiz (-g),
+    # aks holda useradd yangi shaxsiy guruh yaratmoqchi bo'lib to'qnashadi (exit code 9).
+    && useradd -m -s /bin/bash -g operator operator \
     && sed -ri 's/^#?PermitRootLogin.*/PermitRootLogin no/; s/^#?PasswordAuthentication.*/PasswordAuthentication yes/; \
                 s/^#?X11Forwarding.*/X11Forwarding no/; s/^#?AllowTcpForwarding.*/AllowTcpForwarding no/; \
                 s/^#?PermitTunnel.*/PermitTunnel no/' /etc/ssh/sshd_config \
