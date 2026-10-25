@@ -72,5 +72,41 @@ check("sqli", re.search(r"BICO\{[^}]+\}", t.post("/", data={"u": "admin'--", "p"
 t = load("idor")
 check("idor", re.search(r"BICO\{[^}]+\}", t.get("/note/17").text).group(0))
 
+
+# --- linux: arxivni ochib, konspektdagi haqiqiy buyruqlar bilan yechamiz
+import subprocess
+import tarfile
+import tempfile
+
+
+def sh(slug, cmd):
+    with tempfile.TemporaryDirectory() as td:
+        with tarfile.open(C / f"linux/{slug}/uy.tar.gz") as tf:
+            tf.extractall(td, filter="tar")
+        out = subprocess.run(["bash", "-c", cmd], cwd=td + "/uy", capture_output=True, text=True).stdout
+    return out
+
+
+def flag_in(out):
+    m = re.search(r"BICO\{[^}]+\}", out)
+    return m.group(0) if m else out.strip()
+
+
+check("l_hidden", flag_in(sh("l_hidden", "ls -la >/dev/null; cat .yashirin")))
+check("l_headtail", (lambda o: o[0].split("1-qism: ")[1] + o[1].split("2-qism: ")[1])(
+    sh("l_headtail", "head -n 1 katta.txt; tail -n 1 katta.txt").splitlines()))
+check("l_grep", flag_in(sh("l_grep", 'grep -rn "BICO" .')))
+check("l_findname", flag_in(sh("l_findname", 'cat "$(find . -name salom.txt)"')))
+check("l_findsize", flag_in(sh("l_findsize", 'head -c 100 "$(find . -size +100k)" | strings')))
+check("l_empty", sh("l_empty", "basename $(find . -empty -type f)").strip())
+check("l_perm", flag_in(sh("l_perm", "chmod u+r sir.txt; cat sir.txt")))
+check("l_dirperm", flag_in(sh("l_dirperm", "chmod 711 qorongu; cat qorongu/maxfiy.txt")))
+check("l_env", flag_in(sh("l_env", "shopt -s expand_aliases\nsource sozlama.sh\nbayroq")))
+check("l_wild", flag_in(sh("l_wild", "cat *[A-Z]*")))
+h = sh("l_shadow", "grep ^ctfuser shadow.txt | cut -d: -f2").strip()
+salt = h.split("$")[2]
+pw = subprocess.run(["openssl", "passwd", "-6", "-salt", salt, "iloveyou"], capture_output=True, text=True).stdout.strip()
+check("l_shadow", "BICO{iloveyou}" if pw == h else "hash mos kelmadi")
+
 check("welcome", FLAGS["FLAG_WELCOME"])
 raise SystemExit(0 if ok else 1)

@@ -1,10 +1,25 @@
 # BICO CTF — boshlovchilar uchun
 
-11 ta masala, 1085 ball. Jeopardy format, flag: `BICO{...}`. Platforma: CTFd.
+**Linux** kategoriyasi jamoa o'tgan konspekt bo'yicha (ls, cat, head/tail, grep, find, chmod, wildcard, alias, /etc/shadow).
+Har masala alohida `uy.tar.gz` — o'yinchi o'z Kali'sida ochib, haqiqiy buyruqlar bilan yechadi, server kerak emas.
+Birinchi navbatda shu kategoriya o'ynaladi; Web/Crypto/Forensics — keyingi bosqich.
+
+22 ta masala, 1935 ball. Jeopardy format, flag: `BICO{...}`. Platforma: CTFd.
 
 | Kategoriya | Masala | Ball |
 |---|---|---|
 | Misc | Xush kelibsiz | 10 |
+| Linux | Ko'rinmas fayl (`ls -la`) | 25 |
+| Linux | Boshi va oxiri (`head`/`tail`) | 50 |
+| Linux | Igna ichida pichoq (`grep -r`) | 50 |
+| Linux | Salom qayerda? (`find -name`) | 75 |
+| Linux | Og'ir fayl (`find -size`) | 75 |
+| Linux | Bo'sh qo'l (`find -empty`) | 50 |
+| Linux | Qulf (`chmod`) | 100 |
+| Linux | Qorong'u xona (papka `--x`) | 100 |
+| Linux | Alias sehri (`source`, `alias`) | 50 |
+| Linux | Bitta katta harf (wildcard) | 75 |
+| Linux | Parol buzish (`/etc/shadow`, `john`) | 200 |
 | Web | Robot nima deydi? (robots.txt) | 50 |
 | Web | Mehmon va admin (cookie) | 100 |
 | Web | Admin paroli yo'q (SQLi) | 150 |
@@ -65,4 +80,6 @@ for d in */*/; do ctf challenge install "$d"; done
 - **xor**: kalit `0x5a`
 - **rsa**: `e=3`, `m³ < n` → butun kub ildizi
 - **strings**: `strings manzara.png | grep BICO`
+- **Linux**: har bir masala tavsifidagi hint — to'g'ri buyruq. `l_shadow`: `unshadow` + `john`, parol `iloveyou`.
+  `grep -r BICO .` ko'p Linux masalalarni bir zarbada yechadi — bu zaiflik emas, konspektdagi bilim; ball qiymatlari shunga moslangan.
 - **logs**: `grep -v -E '"(Mozilla|curl)/' access.log` → User-Agent base64
