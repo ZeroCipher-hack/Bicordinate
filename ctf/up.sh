@@ -17,14 +17,17 @@ if ! docker info >/dev/null 2>&1; then
   exit 1
 fi
 
-say "2/6 Python kutubxonalari"
-python3 -m pip install -q --user pillow pyyaml aiohttp
+say "2/6 Python kutubxonalari (alohida virtual muhitda — .venv/)"
+[ -d .venv ] || python3 -m venv .venv
+PY=.venv/bin/python
+$PY -m pip install -q --upgrade pip
+$PY -m pip install -q pillow pyyaml aiohttp flask
 
 say "3/6 Masalalarni generatsiya qilish (build.py)"
-python3 build.py
+$PY build.py
 
 say "4/6 Tekshirish — barcha masalalar yechiladimi (check.py)"
-if ! python3 check.py; then
+if ! $PY check.py; then
   echo
   echo "XATO: yuqorida FAIL bo'lgan masala(lar) bor. Musobaqani boshlamang, avval shuni tuzating." >&2
   exit 1
@@ -51,4 +54,4 @@ echo "Sayt:    http://${IP:-SERVER_IP}:${PORT:-8080}"
 echo "Web masalalar: 8001-8004, SSH machine: 2222"
 [ -n "${CTF_START:-}" ] && echo "Boshlanish: $CTF_START"
 [ -n "${CTF_END:-}" ] && echo "Tugash:     $CTF_END"
-exec python3 app/server.py
+exec $PY app/server.py
