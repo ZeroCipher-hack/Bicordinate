@@ -16,13 +16,29 @@ Flag formati: `BICO{...}`. Hint har biri 10 ball.
 
 ## Ishga tushirish (server)
 
-Kerak: Linux, Docker, Python 3.10+.
+Kerak: Linux, Docker (daemon ishlab turgan bo'lishi kerak), Python 3.10+.
+
+**Bitta buyruq bilan:**
+
+```bash
+cd ctf
+./up.sh
+# yoki vaqt bilan:
+CTF_START="2026-10-26T10:00:00+05:00" CTF_END="2026-10-26T13:00:00+05:00" ./up.sh
+```
+
+`up.sh` ketma-ket qiladi: Docker tekshiradi → masalalarni generatsiya qiladi (`build.py`) → hammasi
+yechilishini tasdiqlaydi (`check.py`, xato bo'lsa shu yerda to'xtaydi) → `bico-shell` va web/`machine`
+image'larini quradi → konteynerlarni ishga tushiradi → saytni ishga tushiradi. Ctrl+C sayt serverini
+to'xtatadi (konteynerlar ishlab turadi). Konteynerlarni to'xtatish: `./down.sh`.
+
+**Qo'lda, qadam-baqadam** (nimadir xato bo'lsa, shu yerdan qarang):
 
 ```bash
 cd ctf
 pip install pillow pyyaml aiohttp
 python3 build.py                              # masalalar, app/challenges.json, shell fayllari
-python3 check.py                              # 50 masalaning hammasi yechilishini tekshiradi
+python3 check.py                              # 51 masalaning hammasi yechilishini tekshiradi
 
 docker build -t bico-shell app/shell          # o'quvchi terminali (har kimga alohida konteyner)
 docker compose --env-file .flags.env up -d --build   # 4 ta web masala (8001-8004) + machine (2222)
