@@ -161,5 +161,18 @@ while True:
 check("f_zip", data.decode().strip())
 
 
+# --- machine (SSH): xeshni john bilan buzib, parolni tekshiramiz
+import subprocess as _sp
+m_user, m_hash = open(ROOT / "app/machine/setup.env").read().splitlines()
+m_user, m_hash = m_user.split("=", 1)[1], m_hash.split("=", 1)[1].strip("'")
+with tempfile.TemporaryDirectory() as td:
+    (Path(td) / "hash.txt").write_text(f"{m_user}:{m_hash}\n")
+    _sp.run(["john", "--format=crypt", "--wordlist=app/shell/rockyou-mini.txt", f"{td}/hash.txt"],
+           cwd=ROOT, capture_output=True, text=True, timeout=30)
+    shown = _sp.run(["john", "--show", "--format=crypt", f"{td}/hash.txt"], cwd=ROOT,
+                    capture_output=True, text=True).stdout
+assert (ROOT / "app/machine/user.txt").read_text().strip() == FLAGS["FLAG_MACHINE1"], "user.txt flag bilan mos emas"
+check("machine1", FLAGS["FLAG_MACHINE1"] if f"{m_user}:" in shown else "crack qilinmadi")
+
 check("welcome", FLAGS["FLAG_WELCOME"])
 raise SystemExit(0 if ok else 1)

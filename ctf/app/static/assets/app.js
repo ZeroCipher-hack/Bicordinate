@@ -40,7 +40,7 @@ const pad = (n) => String(n).padStart(2, '0');
 const hms = (ts) => { const d = new Date(ts * 1000); return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`; };
 const hm = (ts) => hms(ts).slice(0, 5);
 const delta = (sec) => `+${Math.floor(sec / 60)}:${pad(Math.floor(sec % 60))}`;
-const CAT = { linux: 'LINUX', crypto: 'CRYPTO', web: 'WEB', forensics: 'FORENSICS', misc: 'MISC' };
+const CAT = { linux: 'LINUX', crypto: 'CRYPTO', web: 'WEB', forensics: 'FORENSICS', machine: 'MACHINE', misc: 'MISC' };
 const tag = (cat) => h('span', { class: `tag t-${cat}` }, CAT[cat] || cat.toUpperCase());
 
 // **qalin** va `kod` — boshqa hech narsa. Hammasi xavfsiz DOM tugunlari.

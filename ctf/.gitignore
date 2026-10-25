@@ -7,3 +7,6 @@ app/files/
 app/shell/masalalar/
 app/data/
 __pycache__/
+app/machine/user.txt
+app/machine/setup.env
+app/machine/rockyou-mini.txt

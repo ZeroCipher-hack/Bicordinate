@@ -44,6 +44,7 @@ h1{margin:0;font-size:30px;font-weight:700;letter-spacing:-.01em}
 .t-web{color:var(--pink);background:rgba(240,140,180,.12)}
 .t-forensics{color:var(--teal);background:rgba(126,224,195,.12)}
 .t-misc{color:var(--muted);background:rgba(154,164,178,.14)}
+.t-machine{color:#ffb86b;background:rgba(255,184,107,.12)}
 .pts{font-family:var(--mono);font-weight:700;color:var(--accent)}
 .blood{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--blood);background:rgba(255,107,94,.12);padding:3px 8px;border-radius:5px}
 .drop{width:9px;height:11px;fill:var(--blood)}

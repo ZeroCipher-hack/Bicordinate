@@ -10,7 +10,7 @@ ism + PIN bilan kirish, **terminal**, **savollar** (kim yechgani va first blood 
 | Savollar | `/challenges` |
 | Reyting | `/scoreboard` |
 
-Masalalar: Linux 31, Crypto 11, Web 4, Forensics 3, Misc 1. Linux masalalari jamoa o'tgan konspekt bo'yicha
+Masalalar: Linux 31, Crypto 11, Web 4, Forensics 3, Machine 1, Misc 1. Linux masalalari jamoa o'tgan konspekt bo'yicha
 (`ls`, `cat`, `head/tail`, `grep`, `find`, `chmod`, wildcard, `alias`, STDOUT/STDERR, `/etc/passwd`, `/etc/shadow`).
 Flag formati: `BICO{...}`. Hint har biri 10 ball.
 
@@ -25,7 +25,7 @@ python3 build.py                              # masalalar, app/challenges.json, 
 python3 check.py                              # 50 masalaning hammasi yechilishini tekshiradi
 
 docker build -t bico-shell app/shell          # o'quvchi terminali (har kimga alohida konteyner)
-docker compose --env-file .flags.env up -d --build   # 4 ta web masala (8001-8004 portlar)
+docker compose --env-file .flags.env up -d --build   # 4 ta web masala (8001-8004) + machine (2222)
 
 CTF_START=2026-10-26T10:00:00+05:00 CTF_END=2026-10-26T13:00:00+05:00 python3 app/server.py
 ```
@@ -45,6 +45,19 @@ Konteyner cheklovlari: tarmoqsiz, 128 MB RAM, 0.5 CPU, 64 jarayon, faqat o'qish 
 
 **Docker'ga kirish huquqi = root huquqi.** `server.py` ni alohida, kerakli narsasiz mashinada yuriting
 va `0.0.0.0:8080` ni maktab tarmog'idan tashqariga chiqarmang.
+
+## Machine masalasi (SSH, 150 ball)
+
+Veb sahifada (Savollar bo'limida) parol xeshi va foydalanuvchi nomi **to'g'ridan-to'g'ri matn** sifatida ko'rinadi — veb
+hujum shart emas. O'quvchi `john` bilan xeshni buzadi, `ssh operator@SERVER_IP -p 2222` orqali kiradi, `cat user.txt`.
+
+- Bitta umumiy konteyner — hamma shu SSH'ga ulanadi. `operator` foydalanuvchisida `sudo` yo'q, boshqa foydalanuvchi
+  yo'q, shuning uchun boshqa birovning ishiga aralasha olmaydi, lekin **hamma bir xil parolni biladi va bir xil
+  terminalda ishlaydi** — bir vaqtning o'zida bir nechta o'quvchi kirsa, `ls`/`who` orqali bir-birini ko'radi.
+- Portni almashtirish kerak bo'lsa: `docker-compose.yml` dagi `2222:22` ni o'zgartiring va e'londa shuni yozing.
+- Bu konteyner boshqalaridan farqli — `sshd` ishlashi uchun ba'zi Linux imkoniyatlari (`SETUID`, `CHOWN`...) kerak,
+  `--network none` qila olmaymiz (SSH kirish uchun tarmoq shart). Shuning uchun uni **alohida, kam ishonch bilan**
+  qarang: boshqa konteynerlarga qaraganda xavfliroq.
 
 ## Boshqaruv
 

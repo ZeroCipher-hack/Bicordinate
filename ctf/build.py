@@ -8,6 +8,7 @@ import base64
 import codecs
 import json
 import random
+import shutil
 import zlib
 from pathlib import Path
 
@@ -43,6 +44,7 @@ FLAGS = {
     "l_env": "BICO{source_va_alias_ishladi}",
     "l_wild": "BICO{wildcard_katta_harf}",
     "l_shadow": "BICO{iloveyou}",
+    "machine1": "BICO{ssh_orqali_user_flagni_oldim}",
 }
 
 CHALLENGES = []  # (category, slug, name, value, description, files, web_port)
@@ -609,6 +611,26 @@ for cat, slug, name, value, desc, files, port, hints in CHALLENGES:
 total = sum(c[3] for c in CHALLENGES)
 print(f"{len(CHALLENGES)} ta masala, jami {total} ball -> {OUT}")
 
+# ---------------------------------------------------------------- machine (SSH orqali)
+M_USER, M_PASS, M_SALT = "operator", "thunder", "bico_m1"
+assert M_PASS in open("app/shell/rockyou-mini.txt").read().split(), "parol ro'yxatda bo'lishi shart"
+M_HASH = subprocess.run(["openssl", "passwd", "-6", "-salt", M_SALT, M_PASS],
+                        capture_output=True, text=True, check=True).stdout.strip()
+add("machine", "machine1",
+    "Birinchi qadam: SSH", 150,
+    f"Bu alohida mashina — veb hujum shart emas, parol xeshi to'g'ridan-to'g'ri shu yerda.\n\n"
+    f"Foydalanuvchi: `{M_USER}`\nXesh: `{M_HASH}`\n\n"
+    f"1. Xeshni faylga yozing: `echo '{M_USER}:{M_HASH}' > hash.txt`\n\n"
+    f"2. Buzing: `john --format=crypt --wordlist=/usr/share/wordlists/rockyou.txt hash.txt`\n\n"
+    f"3. Ulaning: `ssh {M_USER}@MASHINA_IP` (port va IP — e'londa), topilgan parolni kiriting.\n\n"
+    f"4. `cat user.txt` — flag shu yerda.",
+    hints=["`john --show --format=crypt hash.txt` — allaqachon buzilgan bo'lsa shuni ko'rsatadi.",
+           "SSH ulanishda `Host key verification` so'rasa — `yes` deb javob bering."])
+(ROOT / "app" / "machine").mkdir(parents=True, exist_ok=True)
+(ROOT / "app" / "machine" / "user.txt").write_text(FLAGS["machine1"] + "\n")
+shutil.copy(ROOT / "app" / "shell" / "rockyou-mini.txt", ROOT / "app" / "machine" / "rockyou-mini.txt")
+(ROOT / "app" / "machine" / "setup.env").write_text(f"M_USER={M_USER}\nM_PASS_HASH='{M_HASH}'\n")
+
 # ---------------------------------------------------------------- sayt (app/) uchun eksport
 import hashlib
 import shutil
@@ -616,7 +638,7 @@ import shutil
 APP = ROOT / "app"
 for sub in ("files", "shell/masalalar"):
     shutil.rmtree(APP / sub, ignore_errors=True)
-CAT_ORDER = {"misc": 0, "linux": 1, "crypto": 2, "forensics": 3, "web": 4}
+CAT_ORDER = {"misc": 0, "linux": 1, "crypto": 2, "forensics": 3, "web": 4, "machine": 5}
 export = []
 for cat, slug, name, value, desc, files, port, hints in sorted(CHALLENGES, key=lambda c: (CAT_ORDER[c[0]], c[3], c[2])):
     for sub in (APP / "files" / slug, APP / "shell/masalalar" / slug):

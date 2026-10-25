@@ -25,3 +25,13 @@ services:
     <<: *web
     environment: { CHAL: idor, FLAG: "${FLAG_IDOR}", PORT: "8000" }
     ports: ["8004:8000"]
+
+  machine:
+    build: ./app/machine
+    restart: unless-stopped
+    ports: ["2222:22"]
+    mem_limit: 96m
+    pids_limit: 40
+    cap_drop: [ALL]
+    cap_add: [SETUID, SETGID, CHOWN, AUDIT_WRITE, DAC_OVERRIDE]
+    security_opt: ["no-new-privileges:true"]

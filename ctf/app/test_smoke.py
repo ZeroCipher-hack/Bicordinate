@@ -64,7 +64,7 @@ async def main():
 
         j = await (await a.get(base + "/api/challenges")).json()
         ch = {c["id"]: c for c in j["challenges"]}
-        check("50 masala", len(ch) == 50)
+        check("51 masala", len(ch) == 51)
         dump = json.dumps([c for c in j["challenges"] if c["id"] != "welcome"])
         check("flag/xesh mijozga chiqmaydi", "flag_sha256" not in dump and not any(
             flag(cid) in dump for cid in ch if cid != "welcome"))
@@ -119,14 +119,14 @@ async def main():
         await ws.send_str(json.dumps({"t": "i", "d": "ls masalalar | wc -l; cd masalalar/l_catn && tar xzf uy.tar.gz && sed -n 237p uy/royxat.txt\n"}))
         out = b""
         t0 = time.time()
-        while time.time() - t0 < 8 and flag("l_catn").encode() not in out:
+        while time.time() - t0 < 10 and flag("l_catn").encode() not in out:
             try:
                 m = await ws.receive(timeout=1)
             except asyncio.TimeoutError:
                 continue
             if m.type == aiohttp.WSMsgType.BINARY:
                 out += m.data
-        check("terminal: buyruq ishlaydi, flag topildi", flag("l_catn").encode() in out and b"50" in out, out[-300:])
+        check("terminal: buyruq ishlaydi, flag topildi", flag("l_catn").encode() in out and b"51" in out, out[-300:])
         ws2 = await b.ws_connect(base + "/ws/terminal", headers={"Origin": base})
         await ws.close(); await ws2.close()
     finally:
